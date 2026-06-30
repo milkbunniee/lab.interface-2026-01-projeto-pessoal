@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Art Inc. - História da Arte Gamificada</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* ============================================
+           COLLECTION GRID - CARD UNIFORM SIZING
+           ============================================ */
+
+        .gallery-wall {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            padding: 12px 8px;
+            background: #f5efe8;
+            border-radius: 16px;
+            border: 3px solid var(--border-color);
+            min-height: 380px;
+            align-content: start;
+        }
+
+        .gallery-card {
+            display: flex;
+            flex-direction: column;
+            background: #FFFFFF;
+            border-radius: 14px;
+            border: 3px solid var(--border-color);
+            box-shadow: 0 4px 0 var(--border-color);
+            overflow: hidden;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            width: 100%;
+            aspect-ratio: 3 / 4;
+            min-height: 160px;
+            max-height: 200px;
+        }
+
+        .gallery-card:active {
+            transform: scale(0.96);
+        }
+
+        .gallery-card-image {
+            flex: 1;
+            min-height: 0;
+            position: relative;
+            background: #f0ebe3;
+            overflow: hidden;
+        }
+
+        .gallery-card-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .gallery-card-footer {
+            padding: 4px 6px 6px;
+            background: #FFFFFF;
+            border-top: 2px solid #e8ddd0;
+            flex-shrink: 0;
+            min-height: 42px;
+        }
+
+        .gallery-card-title {
+            font-size: 10px;
+            font-weight: 800;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.2;
+        }
+
+        .gallery-card-artist {
+            font-size: 8px;
+            opacity: 0.7;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .gallery-card-rarity {
+            font-size: 7px;
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 20px;
+            background: #f0ebe3;
+            display: inline-block;
+            margin-top: 1px;
+        }
+
+        /* ============================================
+           PAGINATION DOTS
+           ============================================ */
+        .collection-pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 0 6px 0;
+            margin-top: 8px;
+        }
+
+        .pagination-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #d5ccc3;
+            border: 2px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .pagination-dot:hover {
+            transform: scale(1.15);
+        }
+
+        .pagination-dot.active {
+            background: var(--terracota);
+            border-color: var(--border-color);
+            transform: scale(1.2);
+            box-shadow: 0 2px 6px rgba(180, 90, 50, 0.4);
+        }
+
+        .pagination-dot.inactive {
+            background: #e8e0d8;
+            border-color: #c4b8ab;
+            opacity: 0.6;
+        }
+
+        .pagination-dot.inactive:hover {
+            opacity: 0.9;
+            background: #d5ccc3;
+        }
+
+        /* Pagination arrow buttons */
+        .pagination-arrow {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--border-color);
+            padding: 0 6px;
+            transition: all 0.2s ease;
+            line-height: 1;
+            font-weight: 700;
+        }
+
+        .pagination-arrow:hover:not(:disabled) {
+            color: var(--terracota);
+            transform: scale(1.2);
+        }
+
+        .pagination-arrow:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .pagination-arrow:disabled:hover {
+            color: var(--border-color);
+            transform: none;
+        }
+
+        /* Page counter text */
+        .pagination-info {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-main);
+            opacity: 0.7;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 400px) {
+            .gallery-wall {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+                min-height: 320px;
+            }
+
+            .gallery-card {
+                aspect-ratio: 3 / 4;
+                max-height: 160px;
+                min-height: 140px;
+            }
+
+            .pagination-dot {
+                width: 10px;
+                height: 10px;
+            }
+        }
+
+        @media (min-width: 500px) {
+            .gallery-wall {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 14px;
+            }
+
+            .gallery-card {
+                max-height: 220px;
+                min-height: 180px;
+            }
+        }
+
+        /* ============================================
+           GALLERY WRAPPER WITH PAGINATION
+           ============================================ */
+        .collection-wrapper {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .gallery-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .collection-top-filters {
+            flex-shrink: 0;
+        }
+
+        .gallery-wall-container {
+            flex: 1;
+            position: relative;
+        }
+
+        /* Fade animation for page transitions */
+        .gallery-wall {
+            animation: fadePage 0.3s ease;
+        }
+
+        @keyframes fadePage {
+            0% {
+                opacity: 0.6;
+                transform: translateY(6px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Empty state */
+        .empty-collection {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            color: var(--text-main);
+            opacity: 0.6;
+            text-align: center;
+            min-height: 200px;
+        }
+
+        .empty-collection span {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .empty-collection p {
+            font-size: 14px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Device Simulator Wrapper -->
+    <div class="device-wrapper">
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <span class="time" id="simulated-time">10:00</span>
+            <div class="right-icons">
+                <span class="signal">📶</span>
+                <span class="wifi">📶</span>
+                <div class="battery">
+                    <div class="battery-level"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Global Audio Controls Overlay -->
+        <div class="audio-controls">
+            <button class="btn-audio" id="btn-audio-toggle" title="Mutar/Desmutar Som">
+                <svg viewBox="0 0 24 24" id="audio-icon-svg">
+                    <path
+                        d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- APP CONTAINER -->
+        <div class="app-container">
+            <!-- ================= VIEW 0: INICIO ================= -->
+            <div class="view active" id="view-inicio">
+                <h1 class="onboarding-title">Art Inc.</h1>
+
+                <div class="inicio-chick-wrapper">
+                    <svg viewBox="0 0 120 120" class="chick-head-svg">
+                        <ellipse cx="60" cy="110" rx="30" ry="4" fill="rgba(0,0,0,0.1)" />
+                        <circle cx="60" cy="60" r="45" fill="#FFFFFF" stroke="var(--border-color)" stroke-width="3.5" />
+                        <path d="M 60 15 C 50 15, 48 30, 60 30 C 72 30, 70 15, 60 15 Z" fill="#FFE082"
+                            stroke="var(--border-color)" stroke-width="2.5" />
+                        <path d="M 60 18 C 55 18, 54 28, 60 28 C 66 28, 65 18, 60 18 Z" fill="#FFE082"
+                            stroke="var(--border-color)" stroke-width="1.5" />
+                        <ellipse cx="30" cy="70" rx="9" ry="7" fill="#FFB7D5" />
+                        <ellipse cx="90" cy="70" rx="9" ry="7" fill="#FFB7D5" />
+                        <ellipse cx="46" cy="62" rx="4.5" ry="7" fill="var(--border-color)" />
+                        <ellipse cx="74" cy="62" rx="4.5" ry="7" fill="var(--border-color)" />
+                        <ellipse cx="60" cy="70" rx="7" ry="4.5" fill="#FFA000" stroke="var(--border-color)"
+                            stroke-width="2.5" />
+                    </svg>
+                </div>
+
+                <p class="inicio-subtitle">
+                    A forma livre, fascinante e enriquecedora de aprender História da Arte!
+                </p>
+
+                <button class="btn-cartoon inicio-btn" id="btn-inicio-start">Comece Aqui</button>
+            </div>
+
+            <!-- ================= VIEW 1: ONBOARDING ================= -->
+            <div class="view" id="view-onboarding">
+                <div class="patinho-mascot-wrapper">
+                    <div class="speech-bubble">
+                        Você gostaria de aprender história da arte?
+                    </div>
+                    <img src="assets/teemo1.png" class="patinho-svg" alt="Teemo Mascot"
+                        style="width: 500px; height: auto;">
+                </div>
+                <button class="btn-cartoon terracota" id="btn-onboarding-start">Continue</button>
+            </div>
+
+            <!-- ================= VIEW 2: HOME (MAP) ================= -->
+            <div class="view" id="view-home">
+                <div class="home-header">
+                    <div class="header-left">
+                        <span class="streak-badge" title="Dias seguidos!">🔥 <span id="streak-count-val">7</span>
+                            dias</span>
+                    </div>
+                    <h2 style="font-size: 16px; color: var(--text-main);">Art Inc.</h2>
+                    <div class="header-right" id="header-profile-btn">
+                        <div class="header-avatar-circle">
+                            <svg viewBox="0 0 40 40" width="30" height="30">
+                                <circle cx="20" cy="20" r="16" fill="#FFFFFF" stroke="#3E2723" stroke-width="2" />
+                                <circle cx="14" cy="22" r="3" fill="#FFB7D5" />
+                                <circle cx="26" cy="22" r="3" fill="#FFB7D5" />
+                                <circle cx="16" cy="18" r="2" fill="#3E2723" />
+                                <circle cx="24" cy="18" r="2" fill="#3E2723" />
+                                <path d="M17 21 Q20 25 23 21 Z" fill="#FFA000" stroke="#3E2723" stroke-width="1.5" />
+                            </svg>
+                        </div>
+                        <span class="level-pill" id="level-pill-val">Nív 4</span>
+                    </div>
+                </div>
+
+                <div class="map-container-scroll">
+                    <div class="map-canvas-title">Qual continente vamos explorar hoje?</div>
+                    <div class="map-nodes-trail">
+                        <svg class="map-line-svg">
+                            <path
+                                d="M 200 510 C 200 470, 100 470, 80 430 C 60 380, 180 370, 240 350 C 280 320, 260 300, 240 290 C 200 270, 100 250, 80 210 C 60 160, 180 150, 240 120 C 260 90, 200 60, 170 40"
+                                fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round"
+                                stroke-dasharray="10 12" />
+                        </svg>
+                        <div class="continent-island" id="island-america" style="left: 80px; top: 430px;"></div>
+                        <div class="continent-island" id="island-europa" style="left: 240px; top: 290px;"></div>
+                        <div class="pointing-hand" style="left: 80px; top: 430px;">AQUI!</div>
+                        <div class="continent-island" id="island-asia" style="left: 240px; top: 120px;"></div>
+                        <div class="continent-island" id="island-africa" style="left: 80px; top: 210px;"></div>
+                        <div class="continent-island" id="island-oceania" style="left: 170px; top: 40px;"></div>
+                        <div class="map-mascot"
+                            style="position: absolute; left: 100px; top: 310px; transform: translate(-50%, -50%); z-index: 6; animation: float 3s ease-in-out infinite;">
+                            <img src="assets/teemo2.png" alt="Teemo" style="width: 300px; height: auto;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="daily-art-banner" id="banner-daily-card">
+                    <div class="present-box">🎁</div>
+                    <div class="banner-texts">
+                        <span class="banner-title">Carta do dia disponível!</span>
+                        <span class="banner-desc">Toque para coletar sua recompensa diária.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= VIEW 3: COLLECTION (GALLERY) ================= -->
+            <div class="view" id="view-collection">
+                <h2 style="font-size: 22px; margin-bottom: 12px; color: var(--pink-dark);">Sua Galeria</h2>
+
+                <div class="collection-top-filters">
+                    <!-- Continent Tabs -->
+                    <div class="continent-tabs" id="collection-continent-tabs">
+                        <button class="tab-btn active" data-continent="all">Todos</button>
+                        <button class="tab-btn" data-continent="europa">Europa</button>
+                        <button class="tab-btn" data-continent="asia">Ásia</button>
+                        <button class="tab-btn" data-continent="america">América</button>
+                        <button class="tab-btn" data-continent="africa">África</button>
+                        <button class="tab-btn" data-continent="oceania">Oceania</button>
+                    </div>
+
+                    <!-- Rarity Filter Buttons -->
+                    <div class="rarity-filters">
+                        <button class="rarity-btn active" data-rarity="all">Raridade: Todas</button>
+                        <button class="rarity-btn" data-rarity="comum">★ Comum</button>
+                        <button class="rarity-btn" data-rarity="rara">★★ Rara</button>
+                        <button class="rarity-btn" data-rarity="epica">★★★ Épica</button>
+                    </div>
+                </div>
+
+                <!-- Gallery Grid with Pagination -->
+                <div class="collection-wrapper">
+                    <div class="gallery-container">
+                        <div class="gallery-wall-container">
+                            <div class="gallery-wall" id="collection-grid">
+                                <!-- Cards will be populated dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- PAGINATION -->
+                        <div class="collection-pagination" id="collection-pagination">
+                            <button class="pagination-arrow" id="pagination-prev"
+                                aria-label="Página anterior">‹</button>
+
+                            <div id="pagination-dots-container" style="display: flex; gap: 8px; align-items: center;">
+                                <!-- Dots will be generated dynamically -->
+                            </div>
+
+                            <span class="pagination-info" id="pagination-info">1 / 1</span>
+
+                            <button class="pagination-arrow" id="pagination-next" aria-label="Próxima página">›</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= VIEW 5: QUIZ DIÁRIO ================= -->
+            <div class="view" id="view-quiz">
+                <div class="quiz-header">
+                    <span class="quiz-steps" id="quiz-question-counter">Pergunta 1/5</span>
+                    <span class="quiz-timer" id="quiz-timer-countdown">00:30</span>
+                </div>
+
+                <div class="quiz-question-box">
+                    <div class="quiz-question-illust">
+                        <img src="assets/europe_painting_1.png" alt="Questão" id="quiz-question-image">
+                    </div>
+                    <span id="quiz-question-text">Qual destas obras é de Frida Kahlo?</span>
+                </div>
+
+                <div class="quiz-options-grid" id="quiz-options-container">
+                    <!-- Populated dynamically -->
+                </div>
+
+                <button class="btn-cartoon moss" id="btn-quiz-next" style="display: none; width: 100%;">Avançar</button>
+            </div>
+
+            <!-- ================= VIEW 7: SETTINGS ================= -->
+            <div class="view" id="view-settings">
+                <h2 style="font-size: 22px; margin-bottom: 15px; color: var(--pink-dark);">Configurações</h2>
+
+                <div class="settings-menu">
+                    <div class="settings-group">
+                        <h3 style="font-size: 14px; color: var(--pink-dark);">Lembretes</h3>
+                        <div class="settings-item">
+                            <span>Horário do Quiz Diário</span>
+                            <input type="time" class="settings-input-time" id="settings-quiz-time" value="20:00">
+                        </div>
+                        <div class="settings-item">
+                            <span>Notificações Push</span>
+                            <label class="switch-toggle">
+                                <input type="checkbox" id="settings-notif-switch" checked>
+                                <span class="slider-round"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-group">
+                        <h3 style="font-size: 14px; color: var(--moss);">Sons & Idioma</h3>
+                        <div class="settings-item">
+                            <span>Efeitos Sonoros</span>
+                            <label class="switch-toggle">
+                                <input type="checkbox" id="settings-sound-switch" checked>
+                                <span class="slider-round"></span>
+                            </label>
+                        </div>
+                        <div class="settings-item">
+                            <span>Idioma da Interface</span>
+                            <span style="font-size: 12px; opacity: 0.7;">Português (BR)</span>
+                        </div>
+                    </div>
+
+                    <div class="settings-group">
+                        <h3
+                            style="font-size: 14px; color: var(--yellow-dark); text-shadow: 1px 1px 0 var(--border-color);">
+                            Créditos</h3>
+                        <p style="font-size: 11px; line-height: 1.4; opacity: 0.8; color: var(--text-main);">
+                            Art Inc. desenvolvido como protótipo interativo de história da arte. Toque na coluna
+                            clássica abaixo para invocar a inspiração dos deuses da arte!
+                        </p>
+
+                        <div class="greek-column-easteregg" id="easteregg-column">
+                            <svg viewBox="0 0 60 90" width="100%" height="100%">
+                                <rect x="8" y="78" width="44" height="8" fill="#BDBDBD" stroke="#3E2723"
+                                    stroke-width="2.5" rx="2" />
+                                <rect x="12" y="72" width="36" height="6" fill="#E0E0E0" stroke="#3E2723"
+                                    stroke-width="2.5" />
+                                <rect x="16" y="18" width="5" height="54" fill="#EEEEEE" stroke="#3E2723"
+                                    stroke-width="2" />
+                                <rect x="23" y="18" width="5" height="54" fill="#E0E0E0" stroke="#3E2723"
+                                    stroke-width="2" />
+                                <rect x="30" y="18" width="5" height="54" fill="#EEEEEE" stroke="#3E2723"
+                                    stroke-width="2" />
+                                <rect x="37" y="18" width="5" height="54" fill="#E0E0E0" stroke="#3E2723"
+                                    stroke-width="2" />
+                                <rect x="10" y="12" width="40" height="6" fill="#BDBDBD" stroke="#3E2723"
+                                    stroke-width="2.5" rx="1" />
+                                <circle cx="14" cy="18" r="4" fill="#E0E0E0" stroke="#3E2723" stroke-width="2" />
+                                <circle cx="46" cy="18" r="4" fill="#E0E0E0" stroke="#3E2723" stroke-width="2" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== VIEW: CONTINENT DETAIL ==================== -->
+            <div class="view" id="view-continent-detail">
+                <button class="continent-detail-back" id="btn-continent-back">
+                    <svg viewBox="0 0 24 24" width="20" height="20">
+                        <path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2.5"
+                            stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </button>
+
+                <div class="continent-detail-header" id="continent-detail-header">
+                    <div class="continent-detail-card">
+                        <span class="continent-detail-label">ARTES DO MUNDO</span>
+                        <div class="continent-detail-name" id="continent-detail-name">EUROPA</div>
+                        <p class="continent-detail-desc" id="continent-detail-desc">
+                            Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque
+                            laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi
+                            architecto beatae vitae dicta sunt explicabo.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="continent-detail-explore">
+                    <h3 class="continent-detail-explore-title">Explore</h3>
+                    <div class="continent-detail-artworks" id="continent-detail-artworks">
+                        <!-- Cards will be populated dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== VIEW: DAILY ART ==================== -->
+            <div class="view" id="view-daily-art">
+                <button class="continent-detail-back" id="btn-daily-art-back">
+                    <svg viewBox="0 0 24 24" width="20" height="20">
+                        <path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2.5"
+                            stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </button>
+
+                <div class="daily-art-view-content">
+                    <div class="daily-art-card" id="daily-art-card">
+                        <div class="daily-art-card-header">
+                            <span class="daily-art-card-title">ARTE DO DIA</span>
+                            <span class="daily-art-card-points" id="daily-art-points">+1000</span>
+                        </div>
+                        <div class="daily-art-card-image-frame" id="daily-art-frame">
+                            <img src="assets/van_gogh_sunflowers.webp" alt="Arte do Dia" id="daily-art-image">
+                        </div>
+                        <div class="daily-art-card-artist" id="daily-art-artist">Vincent Van Gogh</div>
+                    </div>
+
+                    <p class="daily-art-description" id="daily-art-desc">
+                        Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque
+                        laudantium. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit.
+                    </p>
+
+                    <button class="btn-cartoon terracota" id="btn-daily-art-collect" style="width: 100%;">Coletar +1000
+                        XP</button>
+                </div>
+            </div>
+
+            <!-- ==================== VIEW: MISSION COMPLETE ==================== -->
+            <div class="view" id="view-mission-complete">
+                <div class="mission-complete-bg-shapes">
+                    <div class="mission-shape shape-1">✦</div>
+                    <div class="mission-shape shape-2">✦</div>
+                    <div class="mission-shape shape-3">✦</div>
+                    <div class="mission-shape shape-4">✦</div>
+                    <div class="mission-shape shape-5">✦</div>
+                    <div class="mission-shape shape-6">✦</div>
+                </div>
+
+                <div class="mission-complete-content">
+                    <div class="mission-stars">
+                        <svg class="mission-star star-left" viewBox="0 0 40 40">
+                            <polygon points="20,2 26,14 38,16 28,26 30,38 20,32 10,38 12,26 2,16 14,14" fill="#FBC02D"
+                                stroke="#3E2723" stroke-width="2" />
+                        </svg>
+                        <svg class="mission-star star-center" viewBox="0 0 50 50">
+                            <polygon points="25,2 32,18 48,20 36,32 38,48 25,40 12,48 14,32 2,20 18,18" fill="#FBC02D"
+                                stroke="#3E2723" stroke-width="2" />
+                        </svg>
+                        <svg class="mission-star star-right" viewBox="0 0 40 40">
+                            <polygon points="20,2 26,14 38,16 28,26 30,38 20,32 10,38 12,26 2,16 14,14" fill="#FBC02D"
+                                stroke="#3E2723" stroke-width="2" />
+                        </svg>
+                    </div>
+
+                    <div class="mission-badge">
+                        <span class="mission-badge-number" id="mission-badge-number">MISSÃO 11</span>
+                        <span class="mission-badge-text">COMPLETA</span>
+                    </div>
+
+                    <img src="assets/teemo2.png" alt="Celebrating Mascot" class="mission-mascot"
+                        style="width: 340px; height: auto; animation: mascotDance 1.5s ease-in-out infinite;">
+                </div>
+
+                <button class="btn-cartoon terracota" id="btn-mission-continue"
+                    style="width: 90%; margin: 0 auto; display: block;">Continuar</button>
+            </div>
+
+        </div> <!-- /app-container -->
+
+        <!-- FIXED BOTTOM NAVIGATION BAR -->
+        <div class="bottom-nav">
+            <div class="bottom-nav-item active" id="btn-nav-map" data-view="view-home">
+                <svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.5" />
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
+                        fill="none" stroke="currentColor" stroke-width="2" />
+                    <path d="M2 12h20" fill="none" stroke="currentColor" stroke-width="2" />
+                </svg>
+                <span>Mapa</span>
+            </div>
+
+            <div class="bottom-nav-item" id="btn-nav-collection" data-view="view-collection">
+                <svg viewBox="0 0 24 24">
+                    <line x1="4" y1="20" x2="20" y2="20" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" />
+                    <line x1="4" y1="4" x2="20" y2="4" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" />
+                    <rect x="6" y="7" width="3" height="10" fill="none" stroke="currentColor" stroke-width="2" />
+                    <rect x="11" y="7" width="3" height="10" fill="none" stroke="currentColor" stroke-width="2" />
+                    <rect x="16" y="7" width="3" height="10" fill="none" stroke="currentColor" stroke-width="2" />
+                </svg>
+                <span>Coleção</span>
+            </div>
+
+            <div class="bottom-nav-item" id="btn-nav-quiz" data-view="view-quiz">
+                <svg viewBox="0 0 24 24">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8l-6-6z" fill="none"
+                        stroke="currentColor" stroke-width="2.5" />
+                    <path d="M14 3v5h5M16 13H8M16 17H8M10 9H8" fill="none" stroke="currentColor" stroke-width="2" />
+                </svg>
+                <span>Quiz</span>
+            </div>
+
+            <div class="bottom-nav-item" id="btn-nav-settings" data-view="view-settings">
+                <svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.5" />
+                    <circle cx="9" cy="9" r="1.5" fill="currentColor" />
+                    <circle cx="15" cy="9" r="1.5" fill="currentColor" />
+                    <circle cx="9" cy="15" r="1.5" fill="currentColor" />
+                    <circle cx="15" cy="15" r="1.5" fill="currentColor" />
+                    <circle cx="12" cy="12" r="1.2" fill="currentColor" />
+                </svg>
+                <span>Ajustes</span>
+            </div>
+        </div>
+
+        <!-- SLIDE-UP DRAWER FOR CONTINENT STATISTICS -->
+        <div class="drawer-overlay" id="continent-drawer-overlay">
+            <div class="drawer-content">
+                <div class="drawer-header">
+                    <h2 class="drawer-title" id="drawer-continent-name">Europa</h2>
+                    <button class="drawer-close" id="btn-drawer-close">✕</button>
+                </div>
+
+                <div class="drawer-progress-container">
+                    <svg class="circle-progress-svg" viewBox="0 0 36 36">
+                        <path class="circle-bg"
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <path class="circle-val" id="drawer-progress-circle"
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    </svg>
+                    <div class="progress-text-box">
+                        <span class="progress-title">Obras Colecionadas</span>
+                        <span class="progress-desc" id="drawer-progress-text">5 / 20 desbloqueadas</span>
+                    </div>
+                </div>
+
+                <span class="locked-label">Obras Bloqueadas (<span id="drawer-locked-count">15</span>)</span>
+                <div class="mini-grid-locked" id="drawer-locked-grid">
+                    <!-- mini gray blocks -->
+                </div>
+
+                <button class="btn-cartoon secondary-btn" id="btn-drawer-explore">Explorar Continente</button>
+            </div>
+        </div>
+
+        <!-- RECEIVE CARD MODAL WITH ROTATING 3D CARD (EASEL LOOK) -->
+        <div class="easel-overlay" id="easel-card-modal">
+            <div class="card-3d-wrapper" id="easel-card-3d">
+                <div class="card-3d-inner">
+                    <div class="card-3d-front">
+                        <div class="card-frame">
+                            <img src="assets/europe_painting_2.jpg" alt="Obra" id="easel-card-img">
+                            <span class="card-tag-rarity" id="easel-card-rarity">★★ Rara</span>
+                        </div>
+                        <div class="card-front-info">
+                            <div class="card-art-title" id="easel-card-title">A Noite Estrelada</div>
+                            <div class="card-art-author" id="easel-card-artist">Vincent Van Gogh</div>
+                        </div>
+                    </div>
+
+                    <div class="card-3d-back">
+                        <div class="card-back-ornate-inner">
+                            <span class="card-back-icon">🎨</span>
+                            <div class="card-back-title" id="easel-back-title">A Noite Estrelada</div>
+                            <div class="card-back-artist" id="easel-back-artist">Van Gogh</div>
+                            <div class="card-back-style" id="easel-back-style">Pós-Impressionismo</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="easel-popup">
+                <div class="easel-wood-shelf"></div>
+                <div class="easel-congrats" id="easel-congrats-title">Você ganhou uma carta!</div>
+                <div class="easel-xp-gain" id="easel-congrats-xp">+30 XP</div>
+
+                <div class="brush-progress-container">
+                    <div class="brush-progress-bar" id="easel-progress-bar"></div>
+                </div>
+
+                <div class="easel-level-text" id="easel-progress-text">Faltam 2 cartas para o nível 5</div>
+                <button class="btn-cartoon terracota" id="btn-easel-close"
+                    style="width: 100%; margin-top: 8px;">Coletar</button>
+            </div>
+        </div>
+
+        <!-- GENERAL GALLERY DETAIL MODAL -->
+        <div class="detail-modal-overlay" id="gallery-detail-modal">
+            <div class="detail-modal-content">
+                <h3 class="title-serif" id="detail-modal-title" style="font-size: 18px; color: var(--pink-dark);">Mona
+                    Lisa</h3>
+                <div class="detail-image-box">
+                    <img src="assets/europe_painting_1.jpg" alt="Obra" id="detail-modal-img">
+                </div>
+                <div style="font-size: 11px; font-weight: 800; opacity: 0.8;" id="detail-modal-author">Leonardo da Vinci
+                    (1503)</div>
+                <div class="detail-desc-box" id="detail-modal-desc">
+                    A Mona Lisa é a obra de arte mais famosa do mundo...
+                </div>
+                <button class="btn-cartoon moss" id="btn-detail-highlight" style="width: 100%;">Colocar em
+                    destaque</button>
+                <button class="btn-cartoon secondary-btn" id="btn-detail-close" style="width: 100%;">Fechar</button>
+            </div>
+        </div>
+
+        <!-- CUSTOM AVATAR CUSTOMIZER DRAWER (SHOP) -->
+        <div class="shop-drawer-overlay" id="avatar-shop-overlay">
+            <div class="shop-drawer">
+                <div class="shop-coins-header">
+                    <h3 class="title-serif" style="font-size: 18px; color: var(--pink-dark);">Guarda-roupa do Pintinho
+                    </h3>
+                    <div class="shop-currency" id="shop-coins-val">💰 150 moedas</div>
+                </div>
+
+                <div class="shop-items-grid" id="shop-accessories-container">
+                    <!-- Shop accessory items will be loaded dynamically -->
+                </div>
+
+                <button class="btn-cartoon secondary-btn" id="btn-shop-close" style="width: 100%;">Concluído</button>
+            </div>
+        </div>
+
+    </div> <!-- /device-wrapper -->
+
+    <script src="app.js"></script>
+</body>
+
+</html>
